@@ -1,0 +1,228 @@
+-- DDL for Data Warehouse Schema in BigQuery
+-- Dataset: demo_oracle_finance (Please replace this with your actual BigQuery dataset ID)
+
+-- 1. DIM_DATE Table
+
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_date` (
+    date_sk INT64 OPTIONS(description="Surrogate Key for Date Dimension (Primary Key)"),
+    calendar_date DATE OPTIONS(description="Actual Calendar Date"),
+    day_of_week STRING OPTIONS(description="Day of the week (e.g., 'Monday')"),
+    day_of_month INT64 OPTIONS(description="Day of the month (1-31)"),
+    month_num INT64 OPTIONS(description="Month number (1-12)"),
+    month_name STRING OPTIONS(description="Full month name (e.g., 'January')"),
+    quarter_num INT64 OPTIONS(description="Calendar Quarter number (1-4)"),
+    quarter_name STRING OPTIONS(description="Calendar Quarter name (e.g., 'Q1')"),
+    year INT64 OPTIONS(description="Calendar Year"),
+    fiscal_period_name STRING OPTIONS(description="Fiscal Period Name (e.g., 'JAN-2024')"),
+    fiscal_quarter_num INT64 OPTIONS(description="Fiscal Quarter number"),
+    fiscal_year INT64 OPTIONS(description="Fiscal Year"),
+    week_of_year INT64 OPTIONS(description="Week number of the year"),
+    is_weekend_flag BOOL OPTIONS(description="TRUE if weekend, FALSE otherwise"),
+    is_holiday_flag BOOL OPTIONS(description="TRUE if holiday, FALSE otherwise")
+)
+OPTIONS(
+    description="Dimension table for date attributes, used for time-based analysis."
+);
+
+-- 2. DIM_ACCOUNT Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_account` (
+    account_sk INT64 OPTIONS(description="Surrogate Key for Account Dimension (Primary Key)"),
+    natural_account_segment STRING OPTIONS(description="Natural key for the account segment (e.g., '5000')"),
+    account_description STRING OPTIONS(description="Description of the GL account"),
+    account_type STRING OPTIONS(description="Type of account (e.g., 'Expense', 'Revenue', 'Asset')"),
+    summary_account_flag BOOL OPTIONS(description="TRUE if a summary account, FALSE otherwise"),
+    posting_allowed_flag BOOL OPTIONS(description="TRUE if posting is allowed to this account"),
+    parent_account_code STRING OPTIONS(description="Parent account code for hierarchy"),
+    level1_account_category STRING OPTIONS(description="Higher-level account category (e.g., 'Operating Expenses')"),
+    level2_account_subcategory STRING OPTIONS(description="Mid-level account subcategory (e.g., 'Salaries & Wages')"),
+    level3_detail_account STRING OPTIONS(description="Detailed account name (e.g., 'Base Salary')"),
+    chart_of_accounts_id INT64 OPTIONS(description="Natural key for Chart of Accounts ID (if multiple COAs)")
+)
+OPTIONS(
+    description="Dimension table for General Ledger account details, supporting financial reporting and cost categorization."
+);
+
+-- 3. DIM_ORGANIZATION Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_organization` (
+    org_sk INT64 OPTIONS(description="Surrogate Key for Organization Dimension (Primary Key)"),
+    org_id INT64 OPTIONS(description="Natural key for Organization ID (e.g., Operating Unit ID, Legal Entity ID)"),
+    org_name STRING OPTIONS(description="Name of the organization"),
+    org_type STRING OPTIONS(description="Type of organization (e.g., 'Legal Entity', 'Operating Unit', 'Inventory Org')"),
+    location STRING OPTIONS(description="Geographic location of the organization"),
+    country STRING OPTIONS(description="Country of the organization"),
+    business_group STRING OPTIONS(description="Business Group associated with the organization"),
+    parent_org_sk INT64 OPTIONS(description="Parent organization surrogate key for hierarchy") -- Foreign Key to itself
+)
+OPTIONS(
+    description="Dimension table for various organizational units (Legal Entities, Operating Units, Inventory Organizations)."
+);
+
+-- 4. DIM_DEPARTMENT Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_department` (
+    department_sk INT64 OPTIONS(description="Surrogate Key for Department Dimension (Primary Key)"),
+    department_code STRING OPTIONS(description="Natural key for Department Code"),
+    department_name STRING OPTIONS(description="Name of the department/cost center"),
+    department_manager STRING OPTIONS(description="Name of the department manager"),
+    department_type STRING OPTIONS(description="Type of department (e.g., 'Sales', 'R&D', 'Admin')"),
+    parent_department_sk INT64 OPTIONS(description="Parent department surrogate key for hierarchy") -- Foreign Key to itself
+)
+OPTIONS(
+    description="Dimension table for departments or cost centers."
+);
+
+-- 5. DIM_VENDOR Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_vendor` (
+    vendor_sk INT64 OPTIONS(description="Surrogate Key for Vendor Dimension (Primary Key)"),
+    vendor_id INT64 OPTIONS(description="Natural key for Vendor ID"),
+    vendor_name STRING OPTIONS(description="Name of the vendor/supplier"),
+    vendor_type STRING OPTIONS(description="Type of vendor (e.g., 'Supplier', 'Employee')"),
+    city STRING OPTIONS(description="City of the vendor"),
+    state STRING OPTIONS(description="State of the vendor"),
+    country STRING OPTIONS(description="Country of the vendor"),
+    payment_terms STRING OPTIONS(description="Standard payment terms with this vendor"),
+    primary_contact STRING OPTIONS(description="Primary contact person at the vendor")
+)
+OPTIONS(
+    description="Dimension table for vendor details."
+);
+
+-- 6. DIM_PRODUCT_ITEM Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_product_item` (
+    item_sk INT64 OPTIONS(description="Surrogate Key for Product Item Dimension (Primary Key)"),
+    inventory_item_id INT64 OPTIONS(description="Natural key for Inventory Item ID"),
+    item_number STRING OPTIONS(description="Item number/code"),
+    item_description STRING OPTIONS(description="Description of the item"),
+    item_category STRING OPTIONS(description="Category of the item"),
+    unit_of_measure STRING OPTIONS(description="Standard unit of measure for the item"),
+    item_type STRING OPTIONS(description="Type of item (e.g., 'Finished Good', 'Raw Material', 'Service')")
+)
+OPTIONS(
+    description="Dimension table for product and service items."
+);
+
+-- 7. DIM_PROJECT Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_project` (
+    project_sk INT64 OPTIONS(description="Surrogate Key for Project Dimension (Primary Key)"),
+    project_id INT64 OPTIONS(description="Natural key for Project ID"),
+    project_number STRING OPTIONS(description="Project number/code"),
+    project_name STRING OPTIONS(description="Name of the project"),
+    project_manager STRING OPTIONS(description="Name of the project manager"),
+    project_status STRING OPTIONS(description="Current status of the project"),
+    project_start_date DATE OPTIONS(description="Project start date"),
+    project_end_date DATE OPTIONS(description="Project end date")
+)
+OPTIONS(
+    description="Dimension table for project details."
+);
+
+-- 8. DIM_EMPLOYEE Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.dim_employee` (
+    employee_sk INT64 OPTIONS(description="Surrogate Key for Employee Dimension (Primary Key)"),
+    person_id INT64 OPTIONS(description="Natural key for Person ID (from HR)"),
+    employee_name STRING OPTIONS(description="Full name of the employee"),
+    job_title STRING OPTIONS(description="Employee's job title"),
+    employee_type STRING OPTIONS(description="Type of employee (e.g., 'Full-time', 'Contractor')"),
+    department_sk INT64 OPTIONS(description="Foreign Key to DIM_DEPARTMENT")
+)
+OPTIONS(
+    description="Dimension table for employee details, useful for expense analysis."
+);
+
+
+-- Fact Tables
+
+-- 1. FACT_GL_JOURNAL_LINES Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.fact_gl_journal_lines` (
+    date_sk INT64 OPTIONS(description="Foreign Key to dim_date (Journal Accounting Date)"),
+    account_sk INT64 OPTIONS(description="Foreign Key to dim_account"),
+    org_sk INT64 OPTIONS(description="Foreign Key to dim_organization"),
+    department_sk INT64 OPTIONS(description="Foreign Key to dim_department"),
+    project_sk INT64 OPTIONS(description="Foreign Key to dim_project"),
+    journal_header_id INT64 OPTIONS(description="Natural key for Journal Header ID"),
+    journal_line_num INT64 OPTIONS(description="Natural key for Journal Line Number"),
+    accounted_dr_amount NUMERIC(38, 9) OPTIONS(description="Accounted Debit Amount"),
+    accounted_cr_amount NUMERIC(38, 9) OPTIONS(description="Accounted Credit Amount"),
+    entered_dr_amount NUMERIC(38, 9) OPTIONS(description="Entered Debit Amount"),
+    entered_cr_amount NUMERIC(38, 9) OPTIONS(description="Entered Credit Amount"),
+    quantity NUMERIC(38, 9) OPTIONS(description="Quantity associated with the GL line (if applicable)"),
+    exchange_rate NUMERIC(38, 9) OPTIONS(description="Exchange rate for the transaction"),
+    journal_accounting_date DATE OPTIONS(description="Journal Accounting Date (for partitioning)")
+)
+PARTITION BY
+    journal_accounting_date
+CLUSTER BY
+    account_sk, org_sk, department_sk
+OPTIONS(
+    description="Fact table for General Ledger journal entry line details, providing granular financial data."
+);
+
+-- 2. FACT_AP_INVOICE_DISTRIBUTIONS Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.fact_ap_invoice_distributions` (
+    date_sk INT64 OPTIONS(description="Foreign Key to dim_date (Invoice Date or Accounting Date)"),
+    vendor_sk INT64 OPTIONS(description="Foreign Key to dim_vendor"),
+    account_sk INT64 OPTIONS(description="Foreign Key to dim_account"),
+    org_sk INT64 OPTIONS(description="Foreign Key to dim_organization"),
+    department_sk INT64 OPTIONS(description="Foreign Key to dim_department"),
+    project_sk INT64 OPTIONS(description="Foreign Key to dim_project"),
+    employee_sk INT64 OPTIONS(description="Foreign Key to dim_employee (for expense reports)"),
+    invoice_id INT64 OPTIONS(description="Natural key for Invoice ID"),
+    invoice_dist_id INT64 OPTIONS(description="Natural key for Invoice Distribution ID"),
+    invoice_amount NUMERIC(38, 9) OPTIONS(description="Total Invoice Amount"),
+    distribution_amount NUMERIC(38, 9) OPTIONS(description="Amount of this specific distribution line"),
+    tax_amount NUMERIC(38, 9) OPTIONS(description="Tax amount on the distribution"),
+    discount_amount NUMERIC(38, 9) OPTIONS(description="Discount amount on the distribution"),
+    quantity_invoiced NUMERIC(38, 9) OPTIONS(description="Quantity invoiced for the line"),
+    invoice_date DATE OPTIONS(description="Invoice Date (for partitioning)")
+)
+PARTITION BY
+    invoice_date
+CLUSTER BY
+    vendor_sk, account_sk, org_sk
+OPTIONS(
+    description="Fact table for Accounts Payable invoice distribution details."
+);
+
+-- 3. FACT_PO_RECEIPT_DISTRIBUTIONS Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.fact_po_receipt_distributions` (
+    date_sk INT64 OPTIONS(description="Foreign Key to dim_date (Receipt Date)"),
+    vendor_sk INT64 OPTIONS(description="Foreign Key to dim_vendor"),
+    item_sk INT64 OPTIONS(description="Foreign Key to dim_product_item"),
+    org_sk INT64 OPTIONS(description="Foreign Key to dim_organization"),
+    project_sk INT64 OPTIONS(description="Foreign Key to dim_project"),
+    po_header_id INT64 OPTIONS(description="Natural key for Purchase Order Header ID"),
+    po_line_id INT64 OPTIONS(description="Natural key for Purchase Order Line ID"),
+    rcv_transaction_id INT64 OPTIONS(description="Natural key for Receiving Transaction ID"),
+    received_quantity NUMERIC(38, 9) OPTIONS(description="Quantity received"),
+    unit_cost NUMERIC(38, 9) OPTIONS(description="Unit cost at the time of receipt"),
+    extended_cost NUMERIC(38, 9) OPTIONS(description="Extended cost (quantity * unit_cost)"),
+    po_unit_price NUMERIC(38, 9) OPTIONS(description="Unit price from the Purchase Order"),
+    receipt_date DATE OPTIONS(description="Receipt Date (for partitioning)")
+)
+PARTITION BY
+    receipt_date
+CLUSTER BY
+    vendor_sk, item_sk, org_sk
+OPTIONS(
+    description="Fact table for Purchase Order receipt distributions, tracking cost of received goods/services."
+);
+
+-- 4. FACT_INV_COST_TRANSACTIONS Table
+CREATE TABLE IF NOT EXISTS `demo_oracle_finance.fact_inv_cost_transactions` (
+    date_sk INT64 OPTIONS(description="Foreign Key to dim_date (Transaction Date)"),
+    item_sk INT64 OPTIONS(description="Foreign Key to dim_product_item"),
+    org_sk INT64 OPTIONS(description="Foreign Key to dim_organization (Inventory Org)"),
+    transaction_id INT64 OPTIONS(description="Natural key for Inventory Transaction ID"),
+    transaction_quantity NUMERIC(38, 9) OPTIONS(description="Quantity of the inventory transaction"),
+    transaction_cost NUMERIC(38, 9) OPTIONS(description="Cost per unit of the transaction"),
+    transaction_value NUMERIC(38, 9) OPTIONS(description="Total value of the inventory transaction"),
+    primary_quantity NUMERIC(38, 9) OPTIONS(description="Primary quantity of the transaction"),
+    primary_cost NUMERIC(38, 9) OPTIONS(description="Primary cost of the transaction"),
+    transaction_date DATE OPTIONS(description="Transaction Date (for partitioning)")
+)
+PARTITION BY
+    transaction_date
+CLUSTER BY
+    item_sk, org_sk
+OPTIONS(
+    description="Fact table for Inventory Cost Transactions, tracking inventory value movements."
+);
